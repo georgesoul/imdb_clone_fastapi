@@ -1,9 +1,17 @@
 from fastapi import FastAPI
+from fastapi.params import Body
 import psycopg2
+from pydantic import BaseModel
 from psycopg2.extras import RealDictCursor
 import time
 
 app = FastAPI()
+
+class Post(BaseModel):
+    title: str
+    content: str
+    published: bool = True
+    
 
 while True:
 
@@ -17,10 +25,15 @@ while True:
         print("Connecting to database failed")
         print("Error: ", error)
         time.sleep(2)
+        
 
 @app.get('/')
-async def root():
+def root():
+    return {"message": "It works!"}
+
+
+@app.get('/posts')
+async def get_posts():
     cursor.execute(""" SELECT * FROM products; """)
-    products = cursor.fetchall()
-    # return {"message": "Hello world!"}
-    return products
+    posts = cursor.fetchall()
+    return posts
