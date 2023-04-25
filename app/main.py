@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 import models
 import schemas
 from database import engine, SessionLocal, get_db
+from passlib.context import CryptContext
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -100,5 +102,13 @@ async def update_post(id: int, post: schemas.PostUpdate, db: Session = Depends(g
     db.commit()
     
     return post_query.first()
+
+@app.post('/users', status_code=status.HTTP_201_CREATED)
+async def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    new_user = models.User(**user.dict())
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     
+    return new_user
     
