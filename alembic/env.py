@@ -1,43 +1,35 @@
-"""Pylons bootstrap environment.
-
-Place 'pylons_config_file' into alembic.ini, and the application will
-be loaded from there.
-
-"""
 from logging.config import fileConfig
 
-from paste.deploy import loadapp
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
 
 from alembic import context
+from app.models import Base
+from app.config import settings
 
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+config.set_main_option("sqlalchemy.url", f'postgresql+psycopg2://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}')
 
-try:
-    # if pylons app already in, don't create a new app
-    from pylons import config as pylons_config
-
-    pylons_config["__file__"]
-except:
-    config = context.config
-    # can use config['__file__'] here, i.e. the Pylons
-    # ini file, instead of alembic.ini
-    config_file = config.get_main_option("pylons_config_file")
-    fileConfig(config_file)
-    wsgi_app = loadapp("config:%s" % config_file, relative_to=".")
-
-
-# customize this section for non-standard engine configurations.
-meta = __import__(
-    "%s.model.meta" % wsgi_app.config["pylons.package"]
-).model.meta
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -49,28 +41,32 @@ def run_migrations_offline():
     script output.
 
     """
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=meta.engine.url,
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
 
     """
-    # specify here how the engine is acquired
-    # engine = meta.engine
-    raise NotImplementedError("Please specify engine connectivity here")
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
 
-    with engine.connect() as connection:  # noqa
+    with connectable.connect() as connection:
         context.configure(
             connection=connection, target_metadata=target_metadata
         )
