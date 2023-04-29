@@ -1,5 +1,5 @@
 __pycache__
-venv/
+.venv/
 alembic/
 .env
 .vercel
