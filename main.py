@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from app import models
-# from app.database import engine
+from app.database import engine
 from app.routes import user, post, auth, vote
 from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize our db based on our sqlalchemy models - deactivated since we introduced alembic
-# models.Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
